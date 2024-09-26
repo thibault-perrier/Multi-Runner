@@ -1,0 +1,16 @@
+{
+    "name": "Network",
+    "rootNamespace": "",
+    "references": [
+        "GUID:767caa37048228240a4a3436c4512618"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
