@@ -1,0 +1,2 @@
+C:\Users\maxdu\Documents\M1\Multi-Runner\Multi-Runner\obj\Debug\Runtime.csproj.AssemblyReference.cache
+C:\Users\maxdu\Documents\M1\Multi-Runner\Multi-Runner\obj\Debug\Runtime.csproj.CoreCompileInputs.cache
