@@ -5,18 +5,19 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     [Header("Sensibility")] 
-    [SerializeField] private float sensX = 2.0f;
-    [SerializeField] private float sensY = 2.0f;
+    [SerializeField] private float sensX;
+    [SerializeField] private float sensY;
     
     [Header("Camera")]
     [SerializeField] Transform cameraTransform;
     
     [Header("Movement")]
-    [SerializeField] private float movementSpeed = 7.0f;
-    [SerializeField] private float groundDrag = 0.5f;
-    [SerializeField] private float jumpForce = 2.0f;
-    [SerializeField] private float jumpsCooldown = 2.0f;
-    [SerializeField] private float airMultiplier = 1.0f;
+    [SerializeField] private float walkSpeed;
+    [SerializeField] private float sprintSpeed;
+    [SerializeField] private float groundDrag;
+    [SerializeField] private float jumpForce;
+    [SerializeField] private float jumpsCooldown;
+    [SerializeField] private float airMultiplier;
     
     [Header("Ground Check")]
     [SerializeField] private float playerHeight;
@@ -31,10 +32,20 @@ public class PlayerController : MonoBehaviour
     
     private float _xRotation;
     private float _yRotation;
+    private float _movementSpeed = 7.0f;
     
     private Vector2 _movementInput;
     private Vector3 _movementDirection;
 
+    private MovementState _movementState;
+    
+    public enum MovementState
+    {
+        Walking,
+        Sprinting,
+        Air
+    }
+   
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -50,10 +61,10 @@ public class PlayerController : MonoBehaviour
         _movementDirection = _selfTransform.right * _movementInput.x + _selfTransform.forward * _movementInput.y;
         
         if (_isGrounded)
-            _selfRigidbody.AddForce(_movementDirection.normalized * movementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
+            _selfRigidbody.AddForce(_movementDirection.normalized * _movementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
         else
             _selfRigidbody.AddForce(
-                _movementDirection.normalized * movementSpeed * 1000f * airMultiplier * Time.deltaTime,
+                _movementDirection.normalized * _movementSpeed * 1000f * airMultiplier * Time.deltaTime,
                 ForceMode.Force);
     }
 
@@ -61,11 +72,18 @@ public class PlayerController : MonoBehaviour
     {
         // Check if the player is grounded
         _isGrounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, whatIsGround);
+
+        if (_isGrounded)
+        {
+            _movementState = MovementState.Air;
+        }
         
         _selfRigidbody.linearDamping = _isGrounded ? groundDrag : 0.0f;
         
         // Check velocity limits
         SpeedControle();
+        
+        
     }
 
     public void OnMove(InputAction.CallbackContext context)
@@ -110,6 +128,27 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+
+    public void Sprint(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Performed || context.phase == InputActionPhase.Started)
+        {
+            if (_movementState != MovementState.Sprinting && _isGrounded)
+            {
+                _movementSpeed = sprintSpeed;
+                _movementState = MovementState.Sprinting;
+            }
+                
+            
+        }
+        else if (context.phase == InputActionPhase.Canceled)
+        {
+            _movementSpeed = walkSpeed;
+            _movementState = MovementState.Walking;
+        }
+    }
+    
+    
     private IEnumerator JumpRoutine()
     {
         while (_isJumpingHeld)  // Keep jumping as long as the button is held down
@@ -141,15 +180,12 @@ public class PlayerController : MonoBehaviour
         // Limit the player's velocity on the x and z axes to avoid exceeding movementSpeed
         Vector3 flatVelocity = new Vector3(_selfRigidbody.linearVelocity.x, 0, _selfRigidbody.linearVelocity.z);
 
-        if (flatVelocity.magnitude > movementSpeed)
+        if (flatVelocity.magnitude > _movementSpeed)
         {
-            Vector3 limitedVelocity = flatVelocity.normalized * movementSpeed;
+            Vector3 limitedVelocity = flatVelocity.normalized * _movementSpeed;
             _selfRigidbody.linearVelocity = new Vector3(limitedVelocity.x, _selfRigidbody.linearVelocity.y, limitedVelocity.z);
         }
     }
 
-    private void ReadyToJump()
-    {
-        _readyToJump = true;
-    }
+    
 }
