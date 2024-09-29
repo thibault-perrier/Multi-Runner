@@ -689,11 +689,14 @@ MonoBehaviour:
   sensX: 10
   sensY: 10
   cameraTransform: {fileID: 1856547824}
-  movementSpeed: 7
+  walkSpeed: 7
+  sprintSpeed: 10
   groundDrag: 0.9
   jumpForce: 5
   jumpsCooldown: 0.5
   airMultiplier: 0.5
+  crouchSpeed: 3.5
+  startCrouchYScale: 0.5
   playerHeight: 2
   whatIsGround:
     serializedVersion: 2
@@ -764,7 +767,19 @@ MonoBehaviour:
     m_ActionId: 852140f2-7766-474d-8707-702459ba45f3
     m_ActionName: 'Player/Interact[/Keyboard/e]'
   - m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1901737191}
+        m_TargetAssemblyTypeName: PlayerController, Runtime
+        m_MethodName: Crouch
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_ActionId: 27c5f898-bc57-4ee1-8800-db469aca5fe3
     m_ActionName: 'Player/Crouch[/Keyboard/c]'
   - m_PersistentCalls:
@@ -792,7 +807,19 @@ MonoBehaviour:
     m_ActionId: b7230bb6-fc9b-4f52-8b25-f5e19cb2c2ba
     m_ActionName: 'Player/Next[/Keyboard/2]'
   - m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1901737191}
+        m_TargetAssemblyTypeName: PlayerController, Runtime
+        m_MethodName: Sprint
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_ActionId: 641cd816-40e6-41b4-8c3d-04687c349290
     m_ActionName: 'Player/Sprint[/Keyboard/leftShift]'
   - m_PersistentCalls:

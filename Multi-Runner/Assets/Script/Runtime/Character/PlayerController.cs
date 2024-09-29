@@ -19,6 +19,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float jumpsCooldown;
     [SerializeField] private float airMultiplier;
     
+    [Header("Crouching")]
+    [SerializeField] private float crouchSpeed;
+    [SerializeField] private float startCrouchYScale;
+    
     [Header("Ground Check")]
     [SerializeField] private float playerHeight;
     [SerializeField] private LayerMask whatIsGround;
@@ -32,7 +36,8 @@ public class PlayerController : MonoBehaviour
     
     private float _xRotation;
     private float _yRotation;
-    private float _movementSpeed = 7.0f;
+    private float _movementSpeed;
+    private float _crouchYScale;
     
     private Vector2 _movementInput;
     private Vector3 _movementDirection;
@@ -43,6 +48,7 @@ public class PlayerController : MonoBehaviour
     {
         Walking,
         Sprinting,
+        Crouching,
         Air
     }
    
@@ -54,6 +60,10 @@ public class PlayerController : MonoBehaviour
         _selfTransform = transform;
         _selfRigidbody = GetComponent<Rigidbody>();
         _selfRigidbody.freezeRotation = true;
+        
+        _movementSpeed = walkSpeed;
+        startCrouchYScale = _selfTransform.localScale.y;
+        
     }
 
     private void FixedUpdate()
@@ -110,8 +120,7 @@ public class PlayerController : MonoBehaviour
         _selfTransform.localRotation = Quaternion.Euler(0f, _yRotation, 0f);
         cameraTransform.localRotation = Quaternion.Euler(_xRotation, 0f, 0f);
     }
-
-    // Jump logic
+    
     public void Jump(InputAction.CallbackContext context)
     {
         if (context.phase == InputActionPhase.Performed || context.phase == InputActionPhase.Started)
@@ -127,8 +136,7 @@ public class PlayerController : MonoBehaviour
             _isJumpingHeld = false;  // Stop jumping when button is released
         }
     }
-
-
+    
     public void Sprint(InputAction.CallbackContext context)
     {
         if (context.phase == InputActionPhase.Performed || context.phase == InputActionPhase.Started)
@@ -147,7 +155,23 @@ public class PlayerController : MonoBehaviour
             _movementState = MovementState.Walking;
         }
     }
-    
+
+    public void Crouch(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            _selfTransform.localScale = new Vector3(_selfTransform.localScale.x, _crouchYScale, _selfTransform.localScale.z);
+            _movementSpeed = crouchSpeed;
+            _selfRigidbody.AddForce(Vector3.down * 5f, ForceMode.Impulse); 
+            _movementState = MovementState.Crouching;
+        }
+        else if (context.phase == InputActionPhase.Canceled)
+        {
+            _selfTransform.localScale = new Vector3(_selfTransform.localScale.x, startCrouchYScale, _selfTransform.localScale.z);
+            _movementSpeed = walkSpeed;
+            _movementState = MovementState.Walking;
+        }
+    }
     
     private IEnumerator JumpRoutine()
     {
