@@ -2,8 +2,18 @@ using UnityEngine;
 
 public class BasicPlayerMovement : MonoBehaviour
 {
+    BoxCollider _col;
+
+    Color baseColor;
+
     public float Speed = 7.0f;
     private Vector3 direction;
+
+    void Start()
+    {
+        _col = GetComponent<BoxCollider>();
+        baseColor = GetComponent<Renderer>().material.color;
+    }
     void Update()
     {
         // Old input backends are enabled.
@@ -29,5 +39,15 @@ public class BasicPlayerMovement : MonoBehaviour
         transform.position += direction.normalized * multiplier;
 
         direction = Vector3.zero;
+    }
+
+    void OnCollisionEnter(Collision other)
+    {
+        GetComponent<Renderer>().material.color = Random.ColorHSV();
+    }
+
+    void OnCollisionExit(Collision other)
+    {
+        GetComponent<Renderer>().material.color = baseColor;
     }
 }
