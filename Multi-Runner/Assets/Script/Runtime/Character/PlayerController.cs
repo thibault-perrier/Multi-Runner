@@ -1,4 +1,5 @@
 using System.Collections;
+using NUnit.Framework.Constraints;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -27,7 +28,14 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float playerHeight;
     [SerializeField] private LayerMask whatIsGround;
     
+    [Header("Slope Handling")]
+    [SerializeField] private float maxSlopeAngle;
+    
+    
+    private RaycastHit _slopeHit;
+    
     private Transform _selfTransform;
+    
     private Rigidbody _selfRigidbody;
     
     private bool _isGrounded;
@@ -69,6 +77,12 @@ public class PlayerController : MonoBehaviour
     private void FixedUpdate()
     {
         _movementDirection = _selfTransform.right * _movementInput.x + _selfTransform.forward * _movementInput.y;
+
+        if (OnSlope())
+        {
+            _selfRigidbody.AddForce(GetSlopeMoveDirection() * _movementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
+        }
+        
         
         if (_isGrounded)
             _selfRigidbody.AddForce(_movementDirection.normalized * _movementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
@@ -211,5 +225,19 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    
+    private bool OnSlope()
+    {
+        if (Physics.Raycast(_selfTransform.position, Vector3.down, out _slopeHit, playerHeight * 0.5f + 0.3f))
+        {
+            float angle = Vector3.Angle(Vector3.up, _slopeHit.normal);
+            return angle < maxSlopeAngle && angle != 0;
+        }
+        
+        return false;
+    }
+
+    private Vector3 GetSlopeMoveDirection()
+    {
+        return Vector3.ProjectOnPlane(_movementDirection, _slopeHit.normal).normalized;
+    }
 }
