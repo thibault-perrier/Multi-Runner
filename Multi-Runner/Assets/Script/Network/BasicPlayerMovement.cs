@@ -43,11 +43,13 @@ public class BasicPlayerMovement : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        Debug.Log("IS COLLIDING");
         GetComponent<Renderer>().material.color = Random.ColorHSV();
     }
 
     void OnTriggerExit(Collider other)
     {
+        Debug.Log("IS COLLIDING");
         GetComponent<Renderer>().material.color = baseColor;
     }
 }
