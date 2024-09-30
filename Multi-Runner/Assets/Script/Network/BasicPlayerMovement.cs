@@ -41,12 +41,12 @@ public class BasicPlayerMovement : MonoBehaviour
         direction = Vector3.zero;
     }
 
-    void OnCollisionEnter(Collision other)
+    void OnTriggerEnter(Collider other)
     {
         GetComponent<Renderer>().material.color = Random.ColorHSV();
     }
 
-    void OnCollisionExit(Collision other)
+    void OnTriggerExit(Collider other)
     {
         GetComponent<Renderer>().material.color = baseColor;
     }
