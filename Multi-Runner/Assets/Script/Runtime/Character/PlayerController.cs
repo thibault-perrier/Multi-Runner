@@ -1,5 +1,4 @@
 using System.Collections;
-using NUnit.Framework.Constraints;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -30,23 +29,20 @@ public class PlayerController : MonoBehaviour
     
     [Header("Slope Handling")]
     [SerializeField] private float maxSlopeAngle;
-    
-    
+
     private RaycastHit _slopeHit;
-    
     private Transform _selfTransform;
-    
     private Rigidbody _selfRigidbody;
     
     private bool _isGrounded;
     private bool _readyToJump = true;
     private bool _isJumpingHeld = false;
-    
+
     private float _xRotation;
     private float _yRotation;
     private float _movementSpeed;
     private float _crouchYScale;
-    
+
     private Vector2 _movementInput;
     private Vector3 _movementDirection;
 
@@ -59,7 +55,7 @@ public class PlayerController : MonoBehaviour
         Crouching,
         Air
     }
-   
+
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -71,43 +67,37 @@ public class PlayerController : MonoBehaviour
         
         _movementSpeed = walkSpeed;
         startCrouchYScale = _selfTransform.localScale.y;
-        
     }
 
     private void FixedUpdate()
     {
         _movementDirection = _selfTransform.right * _movementInput.x + _selfTransform.forward * _movementInput.y;
 
-        if (OnSlope())
+        if (IsGrounded())
         {
-            _selfRigidbody.AddForce(GetSlopeMoveDirection() * _movementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
+            if (OnSlope())
+            {
+                Vector3 slopeDirection = GetSlopeMoveDirection();
+                _selfRigidbody.AddForce(slopeDirection * _movementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
+            }
+            else
+            {
+                _selfRigidbody.AddForce(_movementDirection.normalized * _movementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
+            }
         }
-        
-        
-        if (_isGrounded)
-            _selfRigidbody.AddForce(_movementDirection.normalized * _movementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
         else
-            _selfRigidbody.AddForce(
-                _movementDirection.normalized * _movementSpeed * 1000f * airMultiplier * Time.deltaTime,
-                ForceMode.Force);
+        {
+            // Air movement with air multiplier
+            _selfRigidbody.AddForce(_movementDirection.normalized * _movementSpeed * 1000f * airMultiplier * Time.deltaTime, ForceMode.Force);
+        }
     }
 
     private void Update()
     {
-        // Check if the player is grounded
-        _isGrounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, whatIsGround);
-
-        if (_isGrounded)
-        {
-            _movementState = MovementState.Air;
-        }
-        
-        _selfRigidbody.linearDamping = _isGrounded ? groundDrag : 0.0f;
+        _selfRigidbody.linearDamping = IsGrounded() ? groundDrag : 0.0f;
         
         // Check velocity limits
-        SpeedControle();
-        
-        
+        SpeedControl();
     }
 
     public void OnMove(InputAction.CallbackContext context)
@@ -124,8 +114,8 @@ public class PlayerController : MonoBehaviour
 
     public void Look(InputAction.CallbackContext context)
     {
-        float mouseX = context.ReadValue<Vector2>().x * Time.deltaTime * sensX;
-        float mouseY = context.ReadValue<Vector2>().y * Time.deltaTime * sensY;
+        float mouseX = context.ReadValue<Vector2>().x  * sensX;
+        float mouseY = context.ReadValue<Vector2>().y  * sensY;
 
         _yRotation += mouseX;
         _xRotation -= mouseY;
@@ -134,34 +124,32 @@ public class PlayerController : MonoBehaviour
         _selfTransform.localRotation = Quaternion.Euler(0f, _yRotation, 0f);
         cameraTransform.localRotation = Quaternion.Euler(_xRotation, 0f, 0f);
     }
-    
+
     public void Jump(InputAction.CallbackContext context)
     {
         if (context.phase == InputActionPhase.Performed || context.phase == InputActionPhase.Started)
         {
-            _isJumpingHeld = true;  // Mark that the jump button is held down
+            _isJumpingHeld = true;
             if (_readyToJump)
             {
-                StartCoroutine(JumpRoutine());  // Start the jump routine
+                StartCoroutine(JumpRoutine());
             }
         }
         else if (context.phase == InputActionPhase.Canceled)
         {
-            _isJumpingHeld = false;  // Stop jumping when button is released
+            _isJumpingHeld = false;
         }
     }
-    
+
     public void Sprint(InputAction.CallbackContext context)
     {
         if (context.phase == InputActionPhase.Performed || context.phase == InputActionPhase.Started)
         {
-            if (_movementState != MovementState.Sprinting && _isGrounded)
+            if (_movementState != MovementState.Sprinting && IsGrounded())
             {
                 _movementSpeed = sprintSpeed;
                 _movementState = MovementState.Sprinting;
             }
-                
-            
         }
         else if (context.phase == InputActionPhase.Canceled)
         {
@@ -176,7 +164,7 @@ public class PlayerController : MonoBehaviour
         {
             _selfTransform.localScale = new Vector3(_selfTransform.localScale.x, _crouchYScale, _selfTransform.localScale.z);
             _movementSpeed = crouchSpeed;
-            _selfRigidbody.AddForce(Vector3.down * 5f, ForceMode.Impulse); 
+            _selfRigidbody.AddForce(Vector3.down * 5f, ForceMode.Impulse);
             _movementState = MovementState.Crouching;
         }
         else if (context.phase == InputActionPhase.Canceled)
@@ -186,36 +174,29 @@ public class PlayerController : MonoBehaviour
             _movementState = MovementState.Walking;
         }
     }
-    
+
     private IEnumerator JumpRoutine()
     {
-        while (_isJumpingHeld)  // Keep jumping as long as the button is held down
+        while (_isJumpingHeld)
         {
-            if (_isGrounded && _readyToJump)
+            if (IsGrounded() && _readyToJump)
             {
-                // Reset y velocity to zero before jumping
                 _selfRigidbody.linearVelocity = new Vector3(_selfRigidbody.linearVelocity.x, 0, _selfRigidbody.linearVelocity.z);
-                
-                // Apply the jump force
                 _selfRigidbody.AddForce(_selfTransform.up * jumpForce, ForceMode.Impulse);
-                
+
                 _readyToJump = false;
-                
-                // Set jump cooldown
-                yield return new WaitForSeconds(jumpsCooldown);  // Wait for the cooldown before the next jump
-                
-                _readyToJump = true;  // Allow jumping again after cooldown
+                yield return new WaitForSeconds(jumpsCooldown);
+                _readyToJump = true;
             }
             else
             {
-                yield return null;  // Wait until the player is grounded
+                yield return null;
             }
         }
     }
-    
-    private void SpeedControle()
+
+    private void SpeedControl()
     {
-        // Limit the player's velocity on the x and z axes to avoid exceeding movementSpeed
         Vector3 flatVelocity = new Vector3(_selfRigidbody.linearVelocity.x, 0, _selfRigidbody.linearVelocity.z);
 
         if (flatVelocity.magnitude > _movementSpeed)
@@ -225,14 +206,21 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private bool IsGrounded()
+    {
+        float castRadius = 0.3f;
+        float castDistance = playerHeight * 0.5f + 0.3f;
+        return Physics.SphereCast(_selfTransform.position, castRadius, Vector3.down, out _slopeHit, castDistance, whatIsGround);
+    }
+
     private bool OnSlope()
     {
         if (Physics.Raycast(_selfTransform.position, Vector3.down, out _slopeHit, playerHeight * 0.5f + 0.3f))
         {
             float angle = Vector3.Angle(Vector3.up, _slopeHit.normal);
-            return angle < maxSlopeAngle && angle != 0;
+            return angle < maxSlopeAngle && angle > 0;
         }
-        
+
         return false;
     }
 
