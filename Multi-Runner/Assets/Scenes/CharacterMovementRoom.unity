@@ -392,7 +392,7 @@ GameObject:
   - component: {fileID: 765700589}
   - component: {fileID: 765700588}
   - component: {fileID: 765700587}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -779,6 +779,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraTransform: {fileID: 1651038048}
+  playerTransform: {fileID: 1901737189}
 --- !u!4 &1880247051
 Transform:
   m_ObjectHideFlags: 0
@@ -807,6 +808,7 @@ GameObject:
   - component: {fileID: 1901737190}
   - component: {fileID: 1901737192}
   - component: {fileID: 1901737191}
+  - component: {fileID: 1901737193}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -881,12 +883,15 @@ MonoBehaviour:
   jumpsCooldown: 0.5
   airMultiplier: 0.5
   crouchSpeed: 3.5
-  startCrouchYScale: 0.5
+  crouchYScale: 0
   playerHeight: 2
   whatIsGround:
     serializedVersion: 2
     m_Bits: 1024
   maxSlopeAngle: 0
+  movementSpeed: 0
+  movementDirection: {x: 0, y: 0, z: 0}
+  movementState: 0
 --- !u!114 &1901737192
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -954,8 +959,8 @@ MonoBehaviour:
     m_ActionName: 'Player/Interact[/Keyboard/e]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1901737191}
-        m_TargetAssemblyTypeName: PlayerController, Runtime
+      - m_Target: {fileID: 1901737193}
+        m_TargetAssemblyTypeName: CrouchnSlideComponent, Runtime
         m_MethodName: Crouch
         m_Mode: 0
         m_Arguments:
@@ -1053,6 +1058,23 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!114 &1901737193
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1901737188}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2160991fe000ffa4cb47be80316532b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxSlideTime: 0.75
+  slideForce: 200
+  slideYScale: 0.5
+  crouchYScale: 0.5
+  crouchSpeed: 3.5
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
