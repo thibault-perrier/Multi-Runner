@@ -74,13 +74,12 @@ public class PlayerController : MonoBehaviour
     {
         movementDirection = _selfTransform.right * _movementInput.x + _selfTransform.forward * _movementInput.y;
         
-        Debug.unityLogger.Log(movementDirection);
 
         if (IsGrounded())
         {
             if (OnSlope())
             {
-                Vector3 slopeDirection = GetSlopeMoveDirection();
+                Vector3 slopeDirection = GetSlopeMoveDirection(movementDirection);
                 _selfRigidbody.AddForce(slopeDirection * movementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
             }
             else
@@ -97,10 +96,9 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         
-        
-        
         _selfRigidbody.linearDamping = IsGrounded() ? groundDrag : 0.0f;
         SpeedControl();
+        Debug.Log(OnSlope());
     }
  
     public void OnMove(InputAction.CallbackContext context)
@@ -145,7 +143,7 @@ public class PlayerController : MonoBehaviour
 
     public void Sprint(InputAction.CallbackContext context)
     {
-        if (context.phase == InputActionPhase.Performed && movementState != MovementState.Sprinting && IsGrounded())
+        if (context.phase == InputActionPhase.Performed  && IsGrounded())
         {
             movementSpeed = sprintSpeed;
             movementState = MovementState.Sprinting;
@@ -198,19 +196,21 @@ public class PlayerController : MonoBehaviour
         return isGrounded;
     }
 
-    private bool OnSlope()
+    public bool OnSlope()
     {
         if (Physics.Raycast(_selfTransform.position, Vector3.down, out _slopeHit, playerHeight * 0.5f + 0.3f))
         {
-            float angle = Vector3.Angle(Vector3.up, _slopeHit.normal);
+            float angle = Vector3.Angle(transform.up, _slopeHit.normal);
+            
             return angle < maxSlopeAngle && angle > 0;
         }
+        
         return false;
     }
 
-    private Vector3 GetSlopeMoveDirection()
+    public Vector3 GetSlopeMoveDirection(Vector3 direction)
     {
-        return Vector3.ProjectOnPlane(movementDirection, _slopeHit.normal).normalized;
+        return Vector3.ProjectOnPlane(direction, _slopeHit.normal).normalized;
     }
     
     

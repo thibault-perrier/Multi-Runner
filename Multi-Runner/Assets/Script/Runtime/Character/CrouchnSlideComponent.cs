@@ -60,6 +60,7 @@ public class CrouchnSlideComponent : MonoBehaviour
                 _selfRigidBody.AddForce(Vector3.down * 5f, ForceMode.Impulse);
                 _playerController.movementState = PlayerController.MovementState.Crouching;
             }
+
         }
         else if (context.phase == InputActionPhase.Performed)
         {
@@ -98,9 +99,18 @@ public class CrouchnSlideComponent : MonoBehaviour
 
     private void SlidingMovement()
     {
-        _selfRigidBody.AddForce(_inputDirection.normalized * slideForce, ForceMode.Force);
+        //Slide not on slope
+        if (!_playerController.OnSlope() || _selfRigidBody.linearVelocity.y > -0.1f)
+        {
+            _selfRigidBody.AddForce(_inputDirection.normalized * slideForce, ForceMode.Force);
+            _slideTimer -= Time.deltaTime;
+            
+        }
+        else //Slide on slope
+        {
+            _selfRigidBody.AddForce(_playerController.GetSlopeMoveDirection(_inputDirection) * slideForce, ForceMode.Force);
+        }
         
-        _slideTimer -= Time.deltaTime;
 
         if (_slideTimer <= 0)
             StopSlide();
