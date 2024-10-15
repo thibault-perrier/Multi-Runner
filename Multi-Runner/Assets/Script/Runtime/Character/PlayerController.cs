@@ -36,7 +36,6 @@ public class PlayerController : MonoBehaviour
     private Transform _selfTransform;
     private Rigidbody _selfRigidbody;
     
-    private bool _isGrounded;
     private bool _readyToJump = true;
 
     private float _xRotation;
