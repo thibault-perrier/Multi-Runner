@@ -39,7 +39,7 @@ public class PlayerController : MonoBehaviour
     
     
     
-    private bool sprinting = false;
+    private bool _sprinting = false;
     
     
     
@@ -56,7 +56,7 @@ public class PlayerController : MonoBehaviour
     private float _lastMovementSpeed;
 
     private Vector2 _movementInput;
-    [HideInInspector] public Vector3 movementDirection;
+    [HideInInspector] public Vector3 MovementDirection {private set; get;}
 
     [HideInInspector] public MovementState movementState;
     
@@ -83,24 +83,24 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        movementDirection = _selfTransform.right * _movementInput.x + _selfTransform.forward * _movementInput.y;
+        MovementDirection = _selfTransform.right * _movementInput.x + _selfTransform.forward * _movementInput.y;
         
 
         if (IsGrounded())
         {
             if (OnSlope())
             {
-                Vector3 slopeDirection = GetSlopeMoveDirection(movementDirection);
+                Vector3 slopeDirection = GetSlopeMoveDirection(MovementDirection);
                 _selfRigidbody.AddForce(slopeDirection * currentMovementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
             }
             else
             {
-                _selfRigidbody.AddForce(movementDirection.normalized * currentMovementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
+                _selfRigidbody.AddForce(MovementDirection.normalized * currentMovementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
             }
         }
         else
         {
-            _selfRigidbody.AddForce(movementDirection.normalized * currentMovementSpeed * 1000f * airMultiplier * Time.deltaTime, ForceMode.Force);
+            _selfRigidbody.AddForce(MovementDirection.normalized * currentMovementSpeed * 1000f * airMultiplier * Time.deltaTime, ForceMode.Force);
         }
     }
 

@@ -37,7 +37,7 @@ public class CrouchnSlideComponent : MonoBehaviour
 
     private void Update()
     {
-        _inputDirection = _playerController.movementDirection;
+        _inputDirection = _playerController.MovementDirection;
     }
 
     private void FixedUpdate()
