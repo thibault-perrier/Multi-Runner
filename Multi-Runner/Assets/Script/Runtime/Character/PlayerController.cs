@@ -1,9 +1,9 @@
 using System.Collections;
-using Codice.Client.BaseCommands.Differences;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Serialization;
+using TMPro;
 
+[RequireComponent(typeof(Rigidbody))]
 public class PlayerController : MonoBehaviour
 {
     [Header("Sensibility")] 
@@ -14,8 +14,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Transform cameraTransform;
     
     [Header("Movement")]
-    public float walkSpeed;
-    [SerializeField] private float sprintSpeed;
+    [SerializeField] private float walkSpeed;
+     public float sprintSpeed;
     [SerializeField] private float groundDrag;
     [SerializeField] private float jumpForce;
     [SerializeField] private float jumpsCooldown;
@@ -31,6 +31,17 @@ public class PlayerController : MonoBehaviour
     
     [Header("Slope Handling")]
     [SerializeField] private float maxSlopeAngle;
+
+    [Header("Debug")] 
+    [SerializeField] private TextMeshProUGUI debugSpeed;
+    
+    [HideInInspector] public bool sliding = false;
+    
+    
+    
+    private bool sprinting = false;
+    
+    
     
     private RaycastHit _slopeHit;
     private Transform _selfTransform;
@@ -40,8 +51,9 @@ public class PlayerController : MonoBehaviour
 
     private float _xRotation;
     private float _yRotation; 
-    [HideInInspector] public float movementSpeed;
-    private float _startCrouchYScale;
+    [HideInInspector] public float currentMovementSpeed;
+    [HideInInspector] public float newMovementSpeed;
+    private float _lastMovementSpeed;
 
     private Vector2 _movementInput;
     [HideInInspector] public Vector3 movementDirection;
@@ -53,6 +65,7 @@ public class PlayerController : MonoBehaviour
         Walking,
         Sprinting,
         Crouching,
+        Sliding,
         Air
     }
 
@@ -65,8 +78,7 @@ public class PlayerController : MonoBehaviour
         _selfRigidbody = GetComponent<Rigidbody>();
         _selfRigidbody.freezeRotation = true;
         
-        movementSpeed = walkSpeed;
-        _startCrouchYScale = _selfTransform.localScale.y;
+        currentMovementSpeed = walkSpeed;
     }
 
     private void FixedUpdate()
@@ -79,25 +91,70 @@ public class PlayerController : MonoBehaviour
             if (OnSlope())
             {
                 Vector3 slopeDirection = GetSlopeMoveDirection(movementDirection);
-                _selfRigidbody.AddForce(slopeDirection * movementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
+                _selfRigidbody.AddForce(slopeDirection * currentMovementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
             }
             else
             {
-                _selfRigidbody.AddForce(movementDirection.normalized * movementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
+                _selfRigidbody.AddForce(movementDirection.normalized * currentMovementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
             }
         }
         else
         {
-            _selfRigidbody.AddForce(movementDirection.normalized * movementSpeed * 1000f * airMultiplier * Time.deltaTime, ForceMode.Force);
+            _selfRigidbody.AddForce(movementDirection.normalized * currentMovementSpeed * 1000f * airMultiplier * Time.deltaTime, ForceMode.Force);
         }
     }
 
     private void Update()
     {
+
+        if (Mathf.Abs(_lastMovementSpeed - newMovementSpeed) > 4f)
+        {
+            // call coroutine to smoothly change velocity 
+            StopCoroutine(SmoothSpeedMovementChange());
+            StartCoroutine(SmoothSpeedMovementChange());
+            
+             _lastMovementSpeed = newMovementSpeed;
+        }
+        else if (Mathf.Abs(newMovementSpeed - currentMovementSpeed) < 3f)
+        {
+            currentMovementSpeed = newMovementSpeed;
+        }
+        else
+        {
+            _lastMovementSpeed = newMovementSpeed;
+        }
         
         _selfRigidbody.linearDamping = IsGrounded() ? groundDrag : 0.0f;
         SpeedControl();
-        Debug.Log(OnSlope());
+        
+        debugSpeed.text = _selfRigidbody.linearVelocity.magnitude.ToString("0.00");
+    }
+    
+
+    private IEnumerator SmoothSpeedMovementChange()
+    {
+
+        float time = 0;
+        float startspeed = currentMovementSpeed;
+        float duration = Mathf.Abs(startspeed - newMovementSpeed);
+        float newspeed = newMovementSpeed;
+
+        while (time < duration)
+        {
+            currentMovementSpeed = Mathf.Lerp(startspeed, newspeed, time / duration);
+            time += Time.deltaTime;
+
+            if (newspeed != newMovementSpeed)
+            {
+                yield break;
+            }
+            
+            yield return null;
+            
+            
+        }
+
+
     }
  
     public void OnMove(InputAction.CallbackContext context)
@@ -144,18 +201,17 @@ public class PlayerController : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Performed  && IsGrounded())
         {
-            movementSpeed = sprintSpeed;
+            currentMovementSpeed = sprintSpeed;
             movementState = MovementState.Sprinting;
         }
         else if (context.phase == InputActionPhase.Canceled)
         {
-            movementSpeed = walkSpeed;
+            currentMovementSpeed = walkSpeed;
             movementState = MovementState.Walking;
         }
     }
 
     
-
     private IEnumerator JumpCooldown()
     {
         yield return new WaitForSeconds(jumpsCooldown);
@@ -166,17 +222,17 @@ public class PlayerController : MonoBehaviour
     {
         if (OnSlope())
         {
-            if (_selfRigidbody.linearVelocity.magnitude > movementSpeed)
+            if (_selfRigidbody.linearVelocity.magnitude > currentMovementSpeed)
             {
-                _selfRigidbody.linearVelocity = _selfRigidbody.linearVelocity.normalized * movementSpeed;
+                _selfRigidbody.linearVelocity = _selfRigidbody.linearVelocity.normalized * currentMovementSpeed;
             }
         }
         else
         {
             Vector3 flatVelocity = new Vector3(_selfRigidbody.linearVelocity.x, 0, _selfRigidbody.linearVelocity.z);
-            if (flatVelocity.magnitude > movementSpeed)
+            if (flatVelocity.magnitude > currentMovementSpeed)
             {
-                Vector3 limitedVelocity = flatVelocity.normalized * movementSpeed;
+                Vector3 limitedVelocity = flatVelocity.normalized * currentMovementSpeed;
                 _selfRigidbody.linearVelocity = new Vector3(limitedVelocity.x, _selfRigidbody.linearVelocity.y, limitedVelocity.z);
             }
         }

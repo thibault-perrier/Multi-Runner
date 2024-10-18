@@ -2,6 +2,8 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+
+[RequireComponent(typeof(PlayerController))]
 public class CrouchnSlideComponent : MonoBehaviour
 {
     
@@ -14,8 +16,8 @@ public class CrouchnSlideComponent : MonoBehaviour
     [SerializeField] private float maxSlideTime;
     [SerializeField] private float slideForce;
     [SerializeField] private float slideYScale;
+    [SerializeField] private float maxSlideSpeed;
     private float _slideTimer;
-    private bool _sliding;
     
     
     [Header("Crouching Options")]
@@ -40,7 +42,7 @@ public class CrouchnSlideComponent : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (_sliding)
+        if (_playerController.sliding)
             SlidingMovement();
     }
 
@@ -56,7 +58,7 @@ public class CrouchnSlideComponent : MonoBehaviour
             {
                 StopSlide();
                 _selfTransform.localScale = new Vector3(_selfTransform.localScale.x, crouchYScale, _selfTransform.localScale.z);
-                _playerController.movementSpeed = crouchSpeed;
+                _playerController.newMovementSpeed = crouchSpeed;
                 _selfRigidBody.AddForce(Vector3.down * 5f, ForceMode.Impulse);
                 _playerController.movementState = PlayerController.MovementState.Crouching;
             }
@@ -72,7 +74,7 @@ public class CrouchnSlideComponent : MonoBehaviour
             {
                 StopSlide();
                 _selfTransform.localScale = new Vector3(_selfTransform.localScale.x, crouchYScale, _selfTransform.localScale.z);
-                _playerController.movementSpeed = crouchSpeed;
+                _playerController.newMovementSpeed = crouchSpeed;
                 _selfRigidBody.AddForce(Vector3.down * 5f, ForceMode.Impulse);
                 _playerController.movementState = PlayerController.MovementState.Crouching;
             }
@@ -81,14 +83,16 @@ public class CrouchnSlideComponent : MonoBehaviour
         {
             StopSlide();
             _selfTransform.localScale = new Vector3(_selfTransform.localScale.x, _startYScale, _selfTransform.localScale.z);
-            _playerController.movementSpeed = _playerController.walkSpeed;
+            _playerController.newMovementSpeed = _playerController.sprintSpeed;
             _playerController.movementState = PlayerController.MovementState.Walking;
         }
     }
 
     private void StartSlide()
     {
-        _sliding = true;
+        _playerController.sliding = true;
+
+        _playerController.newMovementSpeed = maxSlideSpeed;
         
         _selfTransform.localScale = new Vector3(_selfTransform.localScale.x, slideYScale, _selfTransform.localScale.z);
         
@@ -119,7 +123,9 @@ public class CrouchnSlideComponent : MonoBehaviour
     
     private void StopSlide()
     {
-        _sliding = false;
+        _playerController.newMovementSpeed = _playerController.sprintSpeed;
+        
+        _playerController.sliding = false;
         _selfTransform.localScale = new Vector3(_selfTransform.localScale.x, _startYScale, _selfTransform.localScale.z);
     }
 }
