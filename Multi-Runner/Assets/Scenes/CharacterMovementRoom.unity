@@ -42,7 +42,8 @@ RenderSettings:
 --- !u!157 &3
 LightmapSettings:
   m_ObjectHideFlags: 0
-  serializedVersion: 12
+  serializedVersion: 13
+  m_BakeOnSceneLoad: 0
   m_GISettings:
     serializedVersion: 2
     m_BounceScale: 1
@@ -908,7 +909,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1651038048}
   m_Layer: 0
-  m_Name: CameraPosition
+  m_Name: CameraPositionInPlayer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1210,7 +1211,6 @@ MonoBehaviour:
   sliding: 0
   currentMovementSpeed: 0
   newMovementSpeed: 0
-  movementDirection: {x: 0, y: 0, z: 0}
   movementState: 0
 --- !u!114 &1901737192
 MonoBehaviour:

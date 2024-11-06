@@ -1,24 +1,24 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class MoveCamera : MonoBehaviour
 {
-    
-    [SerializeField] Transform cameraTransform;
+    [SerializeField] Transform cameraTransformInPlayer;
     [SerializeField] Transform playerTransform;
 
 
     private void Start()
     {
-        transform.position = cameraTransform.position;
-        transform.rotation = cameraTransform.rotation;
+        transform.position = cameraTransformInPlayer.position;
+        transform.rotation = cameraTransformInPlayer.rotation;
     }
 
 
     // Update is called once per frame
     void Update()
     {
-        transform.position = cameraTransform.position;
+        transform.position = cameraTransformInPlayer.position;
         transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x,playerTransform.rotation.eulerAngles.y,0);
     }
 }

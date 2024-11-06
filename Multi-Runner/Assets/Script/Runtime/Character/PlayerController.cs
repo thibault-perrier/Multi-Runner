@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
+using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerController : MonoBehaviour
@@ -11,7 +12,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float sensY;
     
     [Header("Camera")]
-    [SerializeField] Transform cameraTransform;
+    [SerializeField] Transform mainCameraTransform;
     
     [Header("Movement")]
     [SerializeField] private float walkSpeed;
@@ -181,7 +182,7 @@ public class PlayerController : MonoBehaviour
         
         _xRotation -= mouseY;
         _xRotation = Mathf.Clamp(_xRotation, -80f, 80f); 
-        cameraTransform.localRotation = Quaternion.Euler(_xRotation, cameraTransform.localRotation.eulerAngles.y, 0f); 
+        mainCameraTransform.localRotation = Quaternion.Euler(_xRotation, mainCameraTransform.localRotation.eulerAngles.y, 0f); 
     }
 
 
