@@ -1,39 +1,73 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using TMPro;
 
+[RequireComponent(typeof(Rigidbody))]
 public class PlayerController : MonoBehaviour
 {
     [Header("Sensibility")] 
-    [SerializeField] private float sensX = 2.0f;
-    [SerializeField] private float sensY = 2.0f;
+    [SerializeField] private float sensX;
+    [SerializeField] private float sensY;
     
     [Header("Camera")]
     [SerializeField] Transform cameraTransform;
     
     [Header("Movement")]
-    [SerializeField] private float movementSpeed = 7.0f;
-    [SerializeField] private float groundDrag = 0.5f;
-    [SerializeField] private float jumpForce = 2.0f;
-    [SerializeField] private float jumpsCooldown = 2.0f;
-    [SerializeField] private float airMultiplier = 1.0f;
+    [SerializeField] private float walkSpeed;
+     public float sprintSpeed;
+    [SerializeField] private float groundDrag;
+    [SerializeField] private float jumpForce;
+    [SerializeField] private float jumpsCooldown;
+    [SerializeField] private float airMultiplier;
+    
+    [Header("Crouching")]
+    [SerializeField] private float crouchSpeed;
+    [SerializeField] private float crouchYScale;
     
     [Header("Ground Check")]
     [SerializeField] private float playerHeight;
     [SerializeField] private LayerMask whatIsGround;
     
+    [Header("Slope Handling")]
+    [SerializeField] private float maxSlopeAngle;
+
+    [Header("Debug")] 
+    [SerializeField] private TextMeshProUGUI debugSpeed;
+    
+    [HideInInspector] public bool sliding = false;
+    
+    
+    
+    private bool _sprinting = false;
+    
+    
+    
+    private RaycastHit _slopeHit;
     private Transform _selfTransform;
     private Rigidbody _selfRigidbody;
     
-    private bool _isGrounded;
     private bool _readyToJump = true;
-    private bool _isJumpingHeld = false;
-    
+
     private float _xRotation;
-    private float _yRotation;
-    
+    private float _yRotation; 
+    [HideInInspector] public float currentMovementSpeed;
+    [HideInInspector] public float newMovementSpeed;
+    private float _lastMovementSpeed;
+
     private Vector2 _movementInput;
-    private Vector3 _movementDirection;
+    [HideInInspector] public Vector3 MovementDirection {private set; get;}
+
+    [HideInInspector] public MovementState movementState;
+    
+    public enum MovementState
+    {
+        Walking,
+        Sprinting,
+        Crouching,
+        Sliding,
+        Air
+    }
 
     private void Start()
     {
@@ -43,31 +77,86 @@ public class PlayerController : MonoBehaviour
         _selfTransform = transform;
         _selfRigidbody = GetComponent<Rigidbody>();
         _selfRigidbody.freezeRotation = true;
+        
+        currentMovementSpeed = walkSpeed;
     }
 
     private void FixedUpdate()
     {
-        _movementDirection = _selfTransform.right * _movementInput.x + _selfTransform.forward * _movementInput.y;
+        MovementDirection = _selfTransform.right * _movementInput.x + _selfTransform.forward * _movementInput.y;
         
-        if (_isGrounded)
-            _selfRigidbody.AddForce(_movementDirection.normalized * movementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
+
+        if (IsGrounded())
+        {
+            if (OnSlope())
+            {
+                Vector3 slopeDirection = GetSlopeMoveDirection(MovementDirection);
+                _selfRigidbody.AddForce(slopeDirection * currentMovementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
+            }
+            else
+            {
+                _selfRigidbody.AddForce(MovementDirection.normalized * currentMovementSpeed * 1000f * Time.deltaTime, ForceMode.Force);
+            }
+        }
         else
-            _selfRigidbody.AddForce(
-                _movementDirection.normalized * movementSpeed * 1000f * airMultiplier * Time.deltaTime,
-                ForceMode.Force);
+        {
+            _selfRigidbody.AddForce(MovementDirection.normalized * currentMovementSpeed * 1000f * airMultiplier * Time.deltaTime, ForceMode.Force);
+        }
     }
 
     private void Update()
     {
-        // Check if the player is grounded
-        _isGrounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, whatIsGround);
-        
-        _selfRigidbody.linearDamping = _isGrounded ? groundDrag : 0.0f;
-        
-        // Check velocity limits
-        SpeedControle();
-    }
 
+        if (Mathf.Abs(_lastMovementSpeed - newMovementSpeed) > 4f)
+        {
+            // call coroutine to smoothly change velocity 
+            StopCoroutine(SmoothSpeedMovementChange());
+            StartCoroutine(SmoothSpeedMovementChange());
+            
+             _lastMovementSpeed = newMovementSpeed;
+        }
+        else if (Mathf.Abs(newMovementSpeed - currentMovementSpeed) < 3f)
+        {
+            currentMovementSpeed = newMovementSpeed;
+        }
+        else
+        {
+            _lastMovementSpeed = newMovementSpeed;
+        }
+        
+        _selfRigidbody.linearDamping = IsGrounded() ? groundDrag : 0.0f;
+        SpeedControl();
+        
+        debugSpeed.text = _selfRigidbody.linearVelocity.magnitude.ToString("0.00");
+    }
+    
+
+    private IEnumerator SmoothSpeedMovementChange()
+    {
+
+        float time = 0;
+        float startspeed = currentMovementSpeed;
+        float duration = Mathf.Abs(startspeed - newMovementSpeed);
+        float newspeed = newMovementSpeed;
+
+        while (time < duration)
+        {
+            currentMovementSpeed = Mathf.Lerp(startspeed, newspeed, time / duration);
+            time += Time.deltaTime;
+
+            if (newspeed != newMovementSpeed)
+            {
+                yield break;
+            }
+            
+            yield return null;
+            
+            
+        }
+
+
+    }
+ 
     public void OnMove(InputAction.CallbackContext context)
     {
         if (context.phase == InputActionPhase.Performed || context.phase == InputActionPhase.Started)
@@ -82,74 +171,102 @@ public class PlayerController : MonoBehaviour
 
     public void Look(InputAction.CallbackContext context)
     {
-        float mouseX = context.ReadValue<Vector2>().x * Time.deltaTime * sensX;
-        float mouseY = context.ReadValue<Vector2>().y * Time.deltaTime * sensY;
+        float mouseX = context.ReadValue<Vector2>().x * sensX;
+        float mouseY = context.ReadValue<Vector2>().y * sensY;
 
-        _yRotation += mouseX;
-        _xRotation -= mouseY;
-        _xRotation = Mathf.Clamp(_xRotation, -90f, 90f);
         
-        _selfTransform.localRotation = Quaternion.Euler(0f, _yRotation, 0f);
-        cameraTransform.localRotation = Quaternion.Euler(_xRotation, 0f, 0f);
+        _yRotation += mouseX;
+        _selfTransform.localRotation = Quaternion.Euler(0f, _yRotation, 0f); 
+    
+        
+        _xRotation -= mouseY;
+        _xRotation = Mathf.Clamp(_xRotation, -80f, 80f); 
+        cameraTransform.localRotation = Quaternion.Euler(_xRotation, cameraTransform.localRotation.eulerAngles.y, 0f); 
     }
 
-    // Jump logic
+
     public void Jump(InputAction.CallbackContext context)
     {
-        if (context.phase == InputActionPhase.Performed || context.phase == InputActionPhase.Started)
+        if (context.phase == InputActionPhase.Performed && _readyToJump && IsGrounded())
         {
-            _isJumpingHeld = true;  // Mark that the jump button is held down
-            if (_readyToJump)
-            {
-                StartCoroutine(JumpRoutine());  // Start the jump routine
-            }
+            _selfRigidbody.linearVelocity = new Vector3(_selfRigidbody.linearVelocity.x, 0, _selfRigidbody.linearVelocity.z);
+            _selfRigidbody.AddForce(_selfTransform.up * jumpForce, ForceMode.Impulse);
+
+            _readyToJump = false;
+            StartCoroutine(JumpCooldown());
+        }
+    }
+
+    public void Sprint(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Performed  && IsGrounded())
+        {
+            currentMovementSpeed = sprintSpeed;
+            movementState = MovementState.Sprinting;
         }
         else if (context.phase == InputActionPhase.Canceled)
         {
-            _isJumpingHeld = false;  // Stop jumping when button is released
+            currentMovementSpeed = walkSpeed;
+            movementState = MovementState.Walking;
         }
     }
 
-    private IEnumerator JumpRoutine()
-    {
-        while (_isJumpingHeld)  // Keep jumping as long as the button is held down
-        {
-            if (_isGrounded && _readyToJump)
-            {
-                // Reset y velocity to zero before jumping
-                _selfRigidbody.linearVelocity = new Vector3(_selfRigidbody.linearVelocity.x, 0, _selfRigidbody.linearVelocity.z);
-                
-                // Apply the jump force
-                _selfRigidbody.AddForce(_selfTransform.up * jumpForce, ForceMode.Impulse);
-                
-                _readyToJump = false;
-                
-                // Set jump cooldown
-                yield return new WaitForSeconds(jumpsCooldown);  // Wait for the cooldown before the next jump
-                
-                _readyToJump = true;  // Allow jumping again after cooldown
-            }
-            else
-            {
-                yield return null;  // Wait until the player is grounded
-            }
-        }
-    }
     
-    private void SpeedControle()
+    private IEnumerator JumpCooldown()
     {
-        // Limit the player's velocity on the x and z axes to avoid exceeding movementSpeed
-        Vector3 flatVelocity = new Vector3(_selfRigidbody.linearVelocity.x, 0, _selfRigidbody.linearVelocity.z);
-
-        if (flatVelocity.magnitude > movementSpeed)
-        {
-            Vector3 limitedVelocity = flatVelocity.normalized * movementSpeed;
-            _selfRigidbody.linearVelocity = new Vector3(limitedVelocity.x, _selfRigidbody.linearVelocity.y, limitedVelocity.z);
-        }
-    }
-
-    private void ReadyToJump()
-    {
+        yield return new WaitForSeconds(jumpsCooldown);
         _readyToJump = true;
     }
+
+    private void SpeedControl()
+    {
+        if (OnSlope())
+        {
+            if (_selfRigidbody.linearVelocity.magnitude > currentMovementSpeed)
+            {
+                _selfRigidbody.linearVelocity = _selfRigidbody.linearVelocity.normalized * currentMovementSpeed;
+            }
+        }
+        else
+        {
+            Vector3 flatVelocity = new Vector3(_selfRigidbody.linearVelocity.x, 0, _selfRigidbody.linearVelocity.z);
+            if (flatVelocity.magnitude > currentMovementSpeed)
+            {
+                Vector3 limitedVelocity = flatVelocity.normalized * currentMovementSpeed;
+                _selfRigidbody.linearVelocity = new Vector3(limitedVelocity.x, _selfRigidbody.linearVelocity.y, limitedVelocity.z);
+            }
+        }
+    }
+
+    private bool IsGrounded()
+    {
+        float castRadius = 0.3f;
+        float castDistance = playerHeight * 0.5f + 0.3f;
+        bool isGrounded = Physics.Raycast(_selfTransform.position, Vector3.down, out _slopeHit, castDistance, whatIsGround);
+
+        if (OnSlope() && isGrounded)
+        {
+            return true;
+        }
+        return isGrounded;
+    }
+
+    public bool OnSlope()
+    {
+        if (Physics.Raycast(_selfTransform.position, Vector3.down, out _slopeHit, playerHeight * 0.5f + 0.3f))
+        {
+            float angle = Vector3.Angle(transform.up, _slopeHit.normal);
+            
+            return angle < maxSlopeAngle && angle > 0;
+        }
+        
+        return false;
+    }
+
+    public Vector3 GetSlopeMoveDirection(Vector3 direction)
+    {
+        return Vector3.ProjectOnPlane(direction, _slopeHit.normal).normalized;
+    }
+    
+    
 }
