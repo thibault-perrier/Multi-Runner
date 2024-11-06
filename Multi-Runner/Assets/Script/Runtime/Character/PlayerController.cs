@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 using TMPro;
 
 [RequireComponent(typeof(Rigidbody))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IDataPersistence
 {
     [Header("Sensibility")] 
     [SerializeField] private float sensX;
@@ -267,6 +267,19 @@ public class PlayerController : MonoBehaviour
     {
         return Vector3.ProjectOnPlane(direction, _slopeHit.normal).normalized;
     }
-    
-    
+
+
+    public void LoadData(GameData data)
+    {
+        this.currentMovementSpeed = data.CurrentMovementSpeed;
+        this.movementState = data.CurrentMovementState;
+        this.newMovementSpeed = data.NewMovementSpeed;
+    }
+
+    public void SaveData(ref GameData data)
+    {
+        data.CurrentMovementState = this.movementState;
+        data.NewMovementSpeed = this.newMovementSpeed;
+        data.CurrentMovementSpeed = this.currentMovementSpeed;
+    }
 }

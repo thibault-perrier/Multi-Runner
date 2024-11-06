@@ -11,7 +11,7 @@ public class GameData
     {
         this.CurrentMovementSpeed = 0;
         this.NewMovementSpeed = 0;
-        CurrentMovementState = PlayerController.MovementState.Walking;
+        this.CurrentMovementState = PlayerController.MovementState.Walking;
 
     }
 }
